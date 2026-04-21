@@ -1,46 +1,40 @@
 import os
+import re
 
 from repositories.ocr_reposiitory import extract_text_from_images, pdf_to_images
 
 
 def pdf_to_text(pdf_path: str) -> str:
-    """
-    Main function: Convert PDF to text using Tesseract OCR.
-    
-    Args:
-        pdf_path: Path to the PDF file
-        
-    Returns:
-        String containing extracted text from all pages
-    """
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF file not found: {pdf_path}")
-    
-    # Convert PDF to images
-    images = pdf_to_images(pdf_path)
-    
-    # Extract text from images
-    text = extract_text_from_images(images)
 
+    images = pdf_to_images(pdf_path)
+    text = extract_text_from_images(images)
     text = clean_text(text)
-    
+
     return text
 
 
 def clean_text(text: str) -> str:
-    """
-    Basic cleaning for OCR output
-    """
-    lines = text.split("\n")
-    cleaned_lines = []
+    return text
+    # lines = text.split("\n")
+    # cleaned_lines = []
 
-    for line in lines:
-        line = line.strip()
+    # for line in lines:
+    #     line = line.strip()
 
-        # remove garbage lines
-        if len(line) < 2:
-            continue
+    #     if len(line) < 2 or "PS D:\\" in line or "projeect" in line:
+    #         continue
 
-        cleaned_lines.append(line)
+    #     line = re.sub(r'(?<=\d),(?=\d)', '.', line)
 
-    return "\n".join(cleaned_lines)
+    #     line = re.sub(r'\b(\d{2})(\d{2})\b', r'\1:\2', line)
+
+    #     line = re.sub(r'[^\w\sא-ת\d\:\/\.\%\-\+]', ' ', line)
+
+    #     line = re.sub(r'\s+', ' ', line).strip()
+
+    #     if line:
+    #         cleaned_lines.append(line)
+
+    # return "\n".join(cleaned_lines)
