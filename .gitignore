@@ -10,3 +10,6 @@ wheels/
 .venv
 .idea
 output.pdf
+
+# Log files
+*.log
