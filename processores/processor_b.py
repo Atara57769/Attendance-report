@@ -4,7 +4,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 import random
 
-from core.models.attendance_report_B_models import AttendanceReportB, AttendanceRowB
+from core.models.attendance_report_models import AttendanceReport, AttendanceRow
 from processores.parse_processor import AttendanceParsingService
 from services.pdf_generator import PDFGenerator
 from services.time_variation_service import TimeVariationService
@@ -16,27 +16,37 @@ class ProcessorB:
         self.svc = AttendanceParsingService()
 
     def parse(self, raw_text: str):
-        report = AttendanceReportB()
         lines = raw_text.strip().split('\n')
 
-        report.rows = [r for r in (self._parse_row(l) for l in lines) if r]
+        rows = [r for r in (self._parse_row(l) for l in lines) if r]
 
         totals_pattern = r'(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d{1,2}:\d{2})'
+
+        total_saturday = total_150 = total_125 = total_100 = total_hours = None
 
         for line in reversed(lines):
             match = re.search(totals_pattern, line)
             if match:
-                report.total_saturday = float(match.group(1))
-                report.total_150 = float(match.group(2))
-                report.total_125 = float(match.group(3))
-                report.total_100 = float(match.group(4))
-                report.total_hours = float(match.group(5))
+                total_saturday = float(match.group(1))
+                total_150 = float(match.group(2))
+                total_125 = float(match.group(3))
+                total_100 = float(match.group(4))
+                total_hours = float(match.group(5))
                 break
 
-        report.bonus = 0.0
-        report.travel = 0.0
-
-        return report
+        return AttendanceReport(
+            rows=rows,
+            total_hours=total_hours,
+            total_days=None,
+            hour_payment=None,
+            total_payment=None,
+            total_100=total_100,
+            total_125=total_125,
+            total_150=total_150,
+            total_saturday=total_saturday,
+            bonus=0.0,
+            travel=0.0,
+        )
 
     def _parse_row(self, line: str):
         if not line or len(line.strip()) < 10 or "Page" in line:
@@ -60,7 +70,7 @@ class ProcessorB:
         if not nums:
             return None
 
-        return AttendanceRowB(
+        return AttendanceRow(
             date=self.svc.extract_date(line),
             day=day,
             entry_time=times[0],
@@ -74,11 +84,13 @@ class ProcessorB:
             location=self.svc.clean_text(line)
         )
    
-    def apply_variation(self, model: AttendanceReportB) -> AttendanceReportB:
+    def apply_variation(self, model: AttendanceReport) -> AttendanceReport:
         total_100 = total_125 = total_150 = total_saturday = 0.0
+        new_rows = []
 
         for row in model.rows:
             if not row.entry_time or not row.end_time:
+                new_rows.append(row)
                 continue
 
             e, x, _ = TimeVariationService.apply_variation(
@@ -87,54 +99,75 @@ class ProcessorB:
             )
 
             if not e or not x:
+                new_rows.append(row)
                 continue
 
-            row.entry_time = e
-            row.end_time = x
-
+            new_break_time = row.break_time
             if row.break_time:
-                row.break_time = TimeVariationService.apply_break_variation(row.break_time)
+                new_break_time = TimeVariationService.apply_break_variation(row.break_time)
 
-            row.sum = TimeVariationService.calculate_hours_with_break(
-                row.entry_time,
-                row.end_time,
-                row.break_time
+            new_sum = TimeVariationService.calculate_hours_with_break(
+                e,
+                x,
+                new_break_time
             )
 
-            # same logic as before
-            if row.col_100:
-                row.col_100 = round(row.sum * 1.0, 2)
-                total_100 += row.col_100
+            # Calculate columns
+            new_col_100 = row.col_100
+            new_col_125 = row.col_125
+            new_col_150 = row.col_150
+            new_col_saturday = row.col_saturday
 
-            if row.col_125:
-                row.col_125 = round(row.sum * 1.25, 2)
-                total_125 += row.col_125
+            if new_col_100:
+                new_col_100 = round(new_sum * 1.0, 2)
+                total_100 += new_col_100
 
-            if row.col_150:
-                row.col_150 = round(row.sum * 1.5, 2)
-                total_150 += row.col_150
+            if new_col_125:
+                new_col_125 = round(new_sum * 1.25, 2)
+                total_125 += new_col_125
 
-            if row.col_saturday:
-                row.col_saturday = round(row.sum * 1.5, 2)
-                total_saturday += row.col_saturday
+            if new_col_150:
+                new_col_150 = round(new_sum * 1.5, 2)
+                total_150 += new_col_150
 
-            total_100 += row.col_100
-            total_125 += row.col_125
-            total_150 += row.col_150
-            total_saturday += row.col_saturday
+            if new_col_saturday:
+                new_col_saturday = round(new_sum * 1.5, 2)
+                total_saturday += new_col_saturday
 
-        model.total_hours = TimeVariationService.calculate_total_hours(model.rows)
-        model.total_days = TimeVariationService.calculate_total_days(model.rows)
+            new_rows.append(AttendanceRow(
+                date=row.date,
+                day=row.day,
+                entry_time=e,
+                end_time=x,
+                sum=new_sum,
+                note=row.note,
+                location=row.location,
+                break_time=new_break_time,
+                col_100=new_col_100,
+                col_125=new_col_125,
+                col_150=new_col_150,
+                col_saturday=new_col_saturday,
+            ))
 
-        model.total_100 = round(total_100, 2)
-        model.total_125 = round(total_125, 2)
-        model.total_150 = round(total_150, 2)
-        model.total_saturday = round(total_saturday, 2)
+        total_hours = TimeVariationService.calculate_total_hours(new_rows)
+        total_days = TimeVariationService.calculate_total_days(new_rows)
 
-        return model
-    def generate_pdf(self, model: AttendanceReportB, output_dir: str = "output", filename: str = None) -> str:
+        return AttendanceReport(
+            rows=new_rows,
+            total_hours=total_hours,
+            total_days=total_days,
+            hour_payment=model.hour_payment,
+            total_payment=model.total_payment,
+            total_100=round(total_100, 2),
+            total_125=round(total_125, 2),
+            total_150=round(total_150, 2),
+            total_saturday=round(total_saturday, 2),
+            bonus=model.bonus,
+            travel=model.travel,
+        )
+    def generate_pdf(self, model: AttendanceReport, output_dir: str = "output", filename: str = None) -> str:
         """
-        Generate PDF report for AttendanceReportB with table and conclusions.
+        Generate PDF report for AttendanceReport with table and conclusions.
         
         """
         pdf_gen = PDFGenerator(output_dir)

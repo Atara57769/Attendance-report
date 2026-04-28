@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
-@dataclass
+@dataclass(frozen=True)
 
 class BaseAttendanceRow:
     date: Optional[str] = None
@@ -9,7 +9,7 @@ class BaseAttendanceRow:
     end_time: Optional[str] = None
     sum: Optional[float] = None
 
-@dataclass
+@dataclass(frozen=True)
 class BaseAttendanceReport:
     total_hours: Optional[float] = None
     total_days: Optional[int] = None

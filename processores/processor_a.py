@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 import random
 
-from core.models.attendance_report_A_models import AttendanceReportA, AttendanceRowA
+from core.models.attendance_report_models import AttendanceReport, AttendanceRow
 from processores.parse_processor import AttendanceParsingService
 from services.pdf_generator import PDFGenerator
 from services.time_variation_service import TimeVariationService
@@ -15,16 +15,17 @@ class ProcessorA:
         self.svc = AttendanceParsingService()
 
     def parse(self, raw_text: str):
-        report = AttendanceReportA()
         lines = raw_text.strip().split('\n')
 
-        report.total_hours = self.svc.extract_total_hours(raw_text)
-        report.total_days = self.svc.extract_total_days(raw_text)
-        report.hour_payment = self.svc.extract_hour_payment(raw_text)
-        report.total_payment = self.svc.extract_total_payment(raw_text)
+        rows = [r for r in (self._parse_row(l) for l in lines) if r]
 
-        report.rows = [r for r in (self._parse_row(l) for l in lines) if r]
-        return report
+        return AttendanceReport(
+            rows=rows,
+            total_hours=self.svc.extract_total_hours(raw_text),
+            total_days=self.svc.extract_total_days(raw_text),
+            hour_payment=self.svc.extract_hour_payment(raw_text),
+            total_payment=self.svc.extract_total_payment(raw_text),
+        )
 
     def _parse_row(self, line: str):
         if not line or len(line.strip()) < 5 or "Page" in line:
@@ -50,7 +51,7 @@ class ProcessorA:
         if not hours:
             return None
 
-        return AttendanceRowA(
+        return AttendanceRow(
             date=date,
             day=day,
             entry_time=entry,
@@ -61,7 +62,8 @@ class ProcessorA:
     
 
 
-    def apply_variation(self, model: AttendanceReportA) -> AttendanceReportA:
+    def apply_variation(self, model: AttendanceReport) -> AttendanceReport:
+        new_rows = []
         for row in model.rows:
             if row.entry_time and row.end_time:
                 e, x, h = TimeVariationService.apply_variation(
@@ -70,18 +72,45 @@ class ProcessorA:
                 )
 
                 if e and x:
-                    row.entry_time = e
-                    row.end_time = x
-                    row.sum = h
+                    new_rows.append(AttendanceRow(
+                        date=row.date,
+                        day=row.day,
+                        entry_time=e,
+                        end_time=x,
+                        sum=h,
+                        note=row.note,
+                        location=row.location,
+                        break_time=row.break_time,
+                        col_100=row.col_100,
+                        col_125=row.col_125,
+                        col_150=row.col_150,
+                        col_saturday=row.col_saturday,
+                    ))
+                else:
+                    new_rows.append(row)
+            else:
+                new_rows.append(row)
 
-        model.total_hours = TimeVariationService.calculate_total_hours(model.rows)
-        model.total_days = TimeVariationService.calculate_total_days(model.rows)
+        total_hours = TimeVariationService.calculate_total_hours(new_rows)
+        total_days = TimeVariationService.calculate_total_days(new_rows)
 
-        return model
+        return AttendanceReport(
+            rows=new_rows,
+            total_hours=total_hours,
+            total_days=total_days,
+            hour_payment=model.hour_payment,
+            total_payment=model.total_payment,
+            total_100=model.total_100,
+            total_125=model.total_125,
+            total_150=model.total_150,
+            total_saturday=model.total_saturday,
+            bonus=model.bonus,
+            travel=model.travel,
+        )
 
-    def generate_pdf(self, model: AttendanceReportA, output_dir: str = "output", filename: str = None) -> str:
+    def generate_pdf(self, model: AttendanceReport, output_dir: str = "output", filename: str = None) -> str:
         """
-        Generate PDF report for AttendanceReportA with table and conclusions.
+        Generate PDF report for AttendanceReport with table and conclusions.
         
         """
         pdf_gen = PDFGenerator(output_dir)

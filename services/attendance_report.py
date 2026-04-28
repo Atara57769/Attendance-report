@@ -16,7 +16,7 @@ def process_attendance_report(input_pdf_path: str, output_pdf_path: str):
     model = processor.parse(raw_text)
     logger.info("Parsed report data")
 
-    processor.apply_variation(model)
+    model = processor.apply_variation(model)
     logger.info("Applied time variations")
 
     processor.generate_pdf(model, output_pdf_path)
