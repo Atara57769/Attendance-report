@@ -9,6 +9,7 @@ from pdf_rander.rander_b import PDFServiceB
 from processors.report_processor import ReportProcessor
 from variation.variation_a import VariationA
 from variation.variation_b import VariationB
+from variation.validating_strategy_decorator import ValidatingStrategyDecorator
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class ProcessorFactory:
         try:
             return ReportProcessor(
                 parser=ParserA(),
-                variation_service=VariationA(),
+                variation_service=ValidatingStrategyDecorator(VariationA()),
                 pdf_service=PDFServiceA()
             )
         except Exception as e:
@@ -36,7 +37,7 @@ class ProcessorFactory:
         try:
             return ReportProcessor(
                 parser=ParserB(),
-                variation_service=VariationB(),
+                variation_service=ValidatingStrategyDecorator(VariationB()),
                 pdf_service=PDFServiceB()
             )
         except Exception as e:

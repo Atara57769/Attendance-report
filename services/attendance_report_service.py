@@ -59,8 +59,10 @@ class AttendanceReportService:
             print("******************************************************************\n")
             print(len(model.rows))
             model = processor.apply_variation(model)
-        except TransformationError:
-            raise
+        except TransformationError as e:
+            # Validation failed - fall back to original row
+            logger.warning(f"Variation validation failed, falling back to original: {e}")
+            # Keep the original model (without variation applied)
         except Exception as e:
             raise TransformationError(f"Failed to apply variation: {e}") from e
 
