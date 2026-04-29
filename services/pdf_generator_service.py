@@ -1,14 +1,20 @@
 """PDF generation service for attendance reports using reportlab"""
+import logging
 import os
 from pathlib import Path
 from datetime import datetime
 from typing import Union, List, Tuple
+
+from core.exceptions import PDFGenerationError
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+
+logger = logging.getLogger(__name__)
 
 _OUTPUT_DIR_PATH="../output"
 class PDFGenerator:
@@ -58,7 +64,7 @@ class PDFGenerator:
     
     def generate_pdf_from_data(self, elements: List, filename: str) -> str:
         """
-        Generate PDF from reportlab elements.
+        Generate PDF from reportlab elements with error handling.
         
         Args:
             elements: List of reportlab elements (Paragraph, Table, Spacer, etc.)
@@ -79,11 +85,11 @@ class PDFGenerator:
                 bottomMargin=0.75*inch
             )
             doc.build(elements)
-            print(f"✓ PDF generated: {pdf_path}")
+            logger.info(f"PDF generated: {pdf_path}")
             return str(pdf_path)
         except Exception as e:
-            print(f"✗ Error generating PDF: {e}")
-            raise
+            logger.error(f"Error generating PDF: {e}")
+            raise PDFGenerationError(f"Failed to generate PDF: {e}") from e
     
     def create_report_a_pdf(self, report, filename: str = None) -> str:
         """

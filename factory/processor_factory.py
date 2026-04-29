@@ -1,3 +1,4 @@
+from core.exceptions import UnknownReportTypeError, ConfigurationError
 from enums.report_type import ReportType
 from processors.processor_a import ProcessorA
 from processors.processor_b import ProcessorB
@@ -8,7 +9,7 @@ from services.time_variation_service import TimeVariationService
 
 class ProcessorFactory:
     def __init__(self):
-        # singletons חיים כאן 👇
+        # singletons 
         self._parsing_service = AttendanceParsingService()
         self._pdf_generator = PDFGenerator()
         self._time_variation_service = TimeVariationService()
@@ -34,9 +35,16 @@ class ProcessorFactory:
         )
 
     def get(self, report_type: ReportType):
+        """Get processor for the given report type with error handling."""
+        if report_type is None:
+            raise UnknownReportTypeError("Report type cannot be None")
+        
         factory = self._processor_map.get(report_type)
 
         if not factory:
-            raise ValueError(f"No processor for {report_type}")
+            raise UnknownReportTypeError(f"No processor registered for report type: {report_type}")
 
-        return factory()
+        try:
+            return factory()
+        except Exception as e:
+            raise ConfigurationError(f"Failed to create processor for {report_type}: {e}") from e

@@ -2,21 +2,38 @@ import os
 import re
 import logging
 
+from core.exceptions import OCRProcessingError
 from repositories.ocr_reposiitory import extract_text_from_images, pdf_to_images
 
 logger = logging.getLogger(__name__)
 
 def pdf_to_text(pdf_path: str) -> str:
+    """Convert PDF to text with error handling."""
     logger.info(f"Converting PDF to text: {pdf_path}")
     if not os.path.exists(pdf_path):
-        logger.error(f"PDF file not found: {pdf_path}")
-        raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+        error_msg = f"PDF file not found: {pdf_path}"
+        logger.error(error_msg)
+        raise FileNotFoundError(error_msg)
 
-    images = pdf_to_images(pdf_path)
-    logger.debug(f"Extracted {len(images)} images from PDF")
-    text = extract_text_from_images(images)
-    text = clean_text(text)
-    logger.info(f"Extracted text length: {len(text)}")
+    try:
+        images = pdf_to_images(pdf_path)
+        logger.debug(f"Extracted {len(images)} images from PDF")
+    except Exception as e:
+        error_msg = f"Failed to convert PDF to images: {e}"
+        logger.error(error_msg)
+        raise OCRProcessingError(error_msg) from e
+
+    try:
+        text = extract_text_from_images(images)
+        text = clean_text(text)
+        logger.info(f"Extracted text length: {len(text)}")
+    except Exception as e:
+        error_msg = f"Failed to extract text from images: {e}"
+        logger.error(error_msg)
+        raise OCRProcessingError(error_msg) from e
+
+    if not text or not text.strip():
+        logger.warning(f"Extracted text is empty for: {pdf_path}")
 
     return text
 
