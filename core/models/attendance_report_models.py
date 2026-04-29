@@ -1,14 +1,17 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from core.models.attendance_report import BaseAttendanceRow, BaseAttendanceReport
-
-
 @dataclass(frozen=True)
-class AttendanceRow(BaseAttendanceRow):
-    # From AttendanceRowA
+class AttendanceRow:
+    # שדות בסיסיים
+    date: Optional[str] = None
+    day: Optional[str] = None
+    entry_time: Optional[str] = None
+    end_time: Optional[str] = None
+    sum: Optional[float] = None
+    
+    # שדות נוספים
     note: Optional[str] = None
-    # From AttendanceRowB
     location: Optional[str] = None 
     break_time: Optional[str] = None     
     col_100: Optional[float] = None  
@@ -17,12 +20,14 @@ class AttendanceRow(BaseAttendanceRow):
     col_saturday: Optional[float] = None 
 
 @dataclass(frozen=True)
-class AttendanceReport(BaseAttendanceReport):
+class AttendanceReport:
     rows: List[AttendanceRow] = field(default_factory=list)
-    # From AttendanceReportA
+    
+    total_hours: Optional[float] = None
+    total_days: Optional[int] = None
+    
     hour_payment: Optional[float] = None
     total_payment: Optional[float] = None
-    # From AttendanceReportB
     total_100: Optional[float] = None
     total_125: Optional[float] = None
     total_150: Optional[float] = None
