@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from datetime import time
+from datetime import date, time
+from datetime import datetime
 from typing import Optional, List
 import logging
 import re
@@ -96,14 +97,39 @@ class BaseParsingService(ABC):
             return None
 
     @staticmethod
-    def extract_date(line: str) -> str:
+    def extract_date(line: str) -> Optional[date]:
+
         try:
             match = re.search(r'\d{1,2}[/-]\d{1,2}[/-]?\d{0,4}', line)
-            return match.group(0) if match else ""
+
+            if not match:
+                return None
+
+            raw = match.group(0)
+
+            raw = raw.replace("-", "/")
+
+            parts = raw.split("/")
+
+            if len(parts) == 2:
+                day, month = parts
+                year = datetime.now().year
+
+            else:
+                day, month, year = parts
+
+                if len(year) == 2:
+                    year = f"20{year}"
+
+            return date(
+                year=int(year),
+                month=int(month),
+                day=int(day)
+            )
 
         except Exception as e:
             logger.warning(f"Failed to extract date from line: {e}")
-            return ""
+            return None
 
     @staticmethod
     def clean_text(line: str) -> str:

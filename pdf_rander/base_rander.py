@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from datetime import datetime
 from typing import List
+import logging
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.pagesizes import A4
@@ -9,6 +10,9 @@ from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
+from core.exceptions import PDFGenerationError
+
+logger = logging.getLogger(__name__)
 
 
 class BasePDFService(ABC):
@@ -22,28 +26,38 @@ class BasePDFService(ABC):
 
     # ---------- PUBLIC ----------
     def generate(self, report) -> str:
-        filename = self._build_filename()
-        elements = self._build_elements(report)
+        try:
+            filename = self._build_filename()
+            elements = self._build_elements(report)
 
-        return self._build_pdf(elements, filename)
+            return self._build_pdf(elements, filename)
+        except PDFGenerationError:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to generate PDF: {e}")
+            raise PDFGenerationError(f"Failed to generate PDF: {e}") from e
 
     # ---------- TEMPLATE METHOD ----------
     def _build_elements(self, report):
-        elements = []
+        try:
+            elements = []
 
-        elements.append(self._title())
-        elements.append(self._subtitle())
-        elements.append(Spacer(1, 0.2 * inch))
+            elements.append(self._title())
+            elements.append(self._subtitle())
+            elements.append(Spacer(1, 0.2 * inch))
 
-        elements.append(self._summary(report))
-        elements.append(Spacer(1, 0.2 * inch))
+            elements.append(self._summary(report))
+            elements.append(Spacer(1, 0.2 * inch))
 
-        elements.append(self._table(report))
-        elements.append(Spacer(1, 0.3 * inch))
+            elements.append(self._table(report))
+            elements.append(Spacer(1, 0.3 * inch))
 
-        elements.append(self._conclusion(report))
+            elements.append(self._conclusion(report))
 
-        return elements
+            return elements
+        except Exception as e:
+            logger.error(f"Failed to build PDF elements: {e}")
+            raise PDFGenerationError(f"Failed to build PDF elements: {e}") from e
 
     # ---------- ABSTRACT ----------
     @abstractmethod
@@ -60,19 +74,24 @@ class BasePDFService(ABC):
 
     # ---------- COMMON ----------
     def _build_pdf(self, elements: List, filename: str) -> str:
-        path = self.output_dir / f"{filename}.pdf"
+        try:
+            path = self.output_dir / f"{filename}.pdf"
 
-        doc = SimpleDocTemplate(
-            str(path),
-            pagesize=A4,
-            rightMargin=0.75 * inch,
-            leftMargin=0.75 * inch,
-            topMargin=0.75 * inch,
-            bottomMargin=0.75 * inch
-        )
+            doc = SimpleDocTemplate(
+                str(path),
+                pagesize=A4,
+                rightMargin=0.75 * inch,
+                leftMargin=0.75 * inch,
+                topMargin=0.75 * inch,
+                bottomMargin=0.75 * inch
+            )
 
-        doc.build(elements)
-        return str(path)
+            doc.build(elements)
+            logger.info(f"PDF generated successfully: {path}")
+            return str(path)
+        except Exception as e:
+            logger.error(f"Failed to build PDF file: {e}")
+            raise PDFGenerationError(f"Failed to build PDF file: {e}") from e
 
     def _title(self):
         return Paragraph("Attendance Report", self.styles['TitleCustom'])

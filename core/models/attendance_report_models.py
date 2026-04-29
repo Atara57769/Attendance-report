@@ -1,10 +1,11 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 from datetime import time
+from datetime import date, time
 
 @dataclass(frozen=True)
 class AttendanceRow:
-    date: Optional[str] = None
+    date: Optional[date] = None
     day: Optional[str] = None
     entry_time: Optional[time] = None
     end_time: Optional[time] = None
