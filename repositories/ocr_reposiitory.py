@@ -58,13 +58,16 @@ def extract_text_from_images(images):
     """Extract text from images using OCR with error handling."""
     try:
         import pytesseract
+        import os
     except ImportError as exc:
         error_msg = 'pytesseract is required to extract text from images'
         logger.error(error_msg)
         raise OCRProcessingError(error_msg) from exc
 
     try:
-        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        tesseract_path = os.environ.get("TESSERACT_CMD")
+        if tesseract_path:
+            pytesseract.pytesseract.tesseract_cmd = tesseract_path
     except Exception as e:
         logger.warning(f"Could not set tesseract path: {e}")
 
