@@ -1,33 +1,31 @@
-
 import logging
+import argparse
+import sys
 from services.attendance_report_service import AttendanceReportService
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+logger = logging.getLogger(__name__)
 
-logger: logging.Logger = logging.getLogger(__name__)
-
-if __name__ == '__main__':
-    logger.info("Starting attendance report processing")
+def main():
+    parser = argparse.ArgumentParser(description="Attendance Report CLI Tool")
+    parser.add_argument("input", help="Path to the input PDF file")
+    parser.add_argument("-o", "--output", help="Path to the output directory", default=".")
     
-    # Create service with DI (no container)
-    service: AttendanceReportService = AttendanceReportService()
+    args = parser.parse_args()
+
+    service = AttendanceReportService()
     
     try:
-        service.process(r"D:\input_pdfs\n_r_5_n.pdf")
-        logger.info("Processed n_r_5_n.pdf successfully")
-        service.process(r"D:\input_pdfs\a_r_9.pdf")
-        logger.info("Processed a_r_9.pdf successfully")
-        service.process(r"D:\input_pdfs\a_r_25.pdf")
-        logger.info("Processed a_r_25.pdf successfully")
-        service.process(r"D:\input_pdfs\n_r_10_n.pdf")
-        logger.info("Processed n_r_10_n.pdf successfully")
-        logger.info("All reports processed successfully")
+        logger.info(f"Starting to process: {args.input}")
+        service.process(args.input) 
+        logger.info(f"Processed {args.input} successfully. Output saved to {args.output}")
     except Exception as e:
-        logger.error(f"Error processing reports: {e}")
-        raise
-  
+        logger.error(f"Error processing report: {e}")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
