@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
-from datetime import time
+from typing import Optional
 from datetime import date, time
 
 @dataclass(frozen=True)
@@ -22,7 +21,7 @@ class AttendanceRow:
 
 @dataclass(frozen=True)
 class AttendanceReport:
-    rows: List[AttendanceRow] = field(default_factory=list)
+    rows: list[AttendanceRow] = field(default_factory=list)
     
     total_hours: Optional[float] = None
     total_days: Optional[int] = None

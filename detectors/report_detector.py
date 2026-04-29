@@ -24,7 +24,7 @@ REPORT_A_PATTERNS = [
 ]
 
 
-def _match_any(patterns, text: str) -> bool:
+def _match_any(patterns: list[str], text: str) -> bool:
     return any(re.search(p, text) for p in patterns)
 
 

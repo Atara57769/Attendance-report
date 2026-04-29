@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from datetime import date, time
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 import logging
 import re
 
-from core.models.attendance_report_models import AttendanceReport
+from core.models.attendance_report_models import AttendanceReport, AttendanceRow
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class BaseParsingService(ABC):
             return line
 
     @staticmethod
-    def extract_times(line: str) -> List[time]:
+    def extract_times(line: str) -> list[time]:
         """Extract time objects from line."""
         try:
             raw_times = re.findall(r'\d{1,4}[:.]?\d{0,2}', line)
@@ -68,11 +68,11 @@ class BaseParsingService(ABC):
             return []
 
     @staticmethod
-    def extract_numbers(line: str) -> List[float]:
+    def extract_numbers(line: str) -> list[float]:
         try:
             nums = re.findall(r'\d+(?:\.\d+)?', line)
 
-            def fix(val_str):
+            def fix(val_str: str) -> float:
                 val = float(val_str)
 
                 if val >= 100 and "." not in val_str:
@@ -198,9 +198,14 @@ class BaseParsingService(ABC):
             return None
 
     @abstractmethod
-    def parse_row(self, line: str):
-        pass
+    def parse_row(self, line: str) -> AttendanceRow | None:
+        raise NotImplementedError
 
     @abstractmethod
-    def build_report(self, rows, raw_text, lines):
-        pass
+    def build_report(
+        self,
+        rows: list[AttendanceRow],
+        raw_text: str,
+        lines: list[str],
+    ) -> AttendanceReport:
+        raise NotImplementedError

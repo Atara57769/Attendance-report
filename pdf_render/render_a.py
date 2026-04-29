@@ -2,15 +2,16 @@ from datetime import datetime
 
 from reportlab.platypus import Table, Paragraph
 
-from pdf_rander.base_rander import BasePDFService
+from core.models.attendance_report_models import AttendanceReport
+from pdf_render.base_render import BasePDFService
 
 
 class PDFServiceA(BasePDFService):
 
-    def _build_filename(self):
+    def _build_filename(self) -> str:
         return f"report_a_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-    def _summary(self, report):
+    def _summary(self, report: AttendanceReport) -> Table:
         data = [
             ["Metric", "Value"],
             ["Total Hours", report.total_hours or 0],
@@ -23,7 +24,7 @@ class PDFServiceA(BasePDFService):
         table.setStyle(self._table_style())
         return table
 
-    def _table(self, report):
+    def _table(self, report: AttendanceReport) -> Table:
         data = [["Date", "Day", "Entry", "End", "Hours", "Notes"]]
 
         for r in report.rows:
@@ -40,7 +41,7 @@ class PDFServiceA(BasePDFService):
         table.setStyle(self._table_style())
         return table
 
-    def _conclusion(self, report):
+    def _conclusion(self, report: AttendanceReport) -> Paragraph:
         return Paragraph(
             f"""
             <b>Conclusion</b><br/>

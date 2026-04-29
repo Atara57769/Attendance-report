@@ -1,4 +1,7 @@
 import logging
+from collections.abc import Callable
+
+from core.models.attendance_report_models import AttendanceReport
 
 from core.exceptions import (
     OCRProcessingError,
@@ -17,11 +20,15 @@ logger = logging.getLogger(__name__)
 
 class AttendanceReportService:
 
-    def __init__(self, factory: ProcessorFactory = None, ocr_service=None):
+    def __init__(
+        self,
+        factory: ProcessorFactory | None = None,
+        ocr_service: Callable[[str], str] | None = None,
+    ) -> None:
         self._factory = factory or ProcessorFactory()
         self._ocr_service = ocr_service or pdf_to_text
 
-    def process(self, input_pdf_path: str):
+    def process(self, input_pdf_path: str) -> AttendanceReport:
         """Process an attendance report PDF with proper error handling."""
         
         # ---------- OCR ----------

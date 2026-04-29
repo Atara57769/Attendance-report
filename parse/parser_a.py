@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ParserA(BaseParsingService):
 
-    def parse_row(self, line: str):
+    def parse_row(self, line: str) -> AttendanceRow | None:
 
         try:
             if not line or len(line.strip()) < 5 or "Page" in line:
@@ -53,7 +53,12 @@ class ParserA(BaseParsingService):
             logger.warning(f"Failed to parse row: {e}")
             return None
 
-    def build_report(self, rows, raw_text, lines):
+    def build_report(
+        self,
+        rows: list[AttendanceRow],
+        raw_text: str,
+        lines: list[str],
+    ) -> AttendanceReport:
 
         return AttendanceReport(
             rows=rows,

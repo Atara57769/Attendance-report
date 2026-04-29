@@ -1,23 +1,23 @@
 from abc import ABC, abstractmethod
-from pathlib import Path
 from datetime import datetime
-from typing import List
 import logging
+from pathlib import Path
 
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
+from reportlab.platypus import Flowable, Paragraph, SimpleDocTemplate, Spacer
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
 from core.exceptions import PDFGenerationError
+from core.models.attendance_report_models import AttendanceReport
 
 logger = logging.getLogger(__name__)
 
 
 class BasePDFService(ABC):
 
-    def __init__(self, output_dir="../output"):
+    def __init__(self, output_dir: str = "../output") -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -25,7 +25,7 @@ class BasePDFService(ABC):
         self._setup_styles()
 
     # ---------- PUBLIC ----------
-    def generate(self, report) -> str:
+    def generate(self, report: AttendanceReport) -> str:
         try:
             filename = self._build_filename()
             elements = self._build_elements(report)
@@ -38,7 +38,7 @@ class BasePDFService(ABC):
             raise PDFGenerationError(f"Failed to generate PDF: {e}") from e
 
     # ---------- TEMPLATE METHOD ----------
-    def _build_elements(self, report):
+    def _build_elements(self, report: AttendanceReport) -> list[Flowable]:
         try:
             elements = []
 
@@ -61,19 +61,19 @@ class BasePDFService(ABC):
 
     # ---------- ABSTRACT ----------
     @abstractmethod
-    def _summary(self, report): ...
+    def _summary(self, report: AttendanceReport) -> Flowable: ...
 
     @abstractmethod
-    def _table(self, report): ...
+    def _table(self, report: AttendanceReport) -> Flowable: ...
 
     @abstractmethod
-    def _conclusion(self, report): ...
+    def _conclusion(self, report: AttendanceReport) -> Flowable: ...
 
     @abstractmethod
     def _build_filename(self) -> str: ...
 
     # ---------- COMMON ----------
-    def _build_pdf(self, elements: List, filename: str) -> str:
+    def _build_pdf(self, elements: list[Flowable], filename: str) -> str:
         try:
             path = self.output_dir / f"{filename}.pdf"
 
@@ -93,16 +93,16 @@ class BasePDFService(ABC):
             logger.error(f"Failed to build PDF file: {e}")
             raise PDFGenerationError(f"Failed to build PDF file: {e}") from e
 
-    def _title(self):
+    def _title(self) -> Paragraph:
         return Paragraph("Attendance Report", self.styles['TitleCustom'])
 
-    def _subtitle(self):
+    def _subtitle(self) -> Paragraph:
         return Paragraph(
             f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             self.styles['Subtitle']
         )
 
-    def _setup_styles(self):
+    def _setup_styles(self) -> None:
         self.styles.add(ParagraphStyle(
             name='TitleCustom',
             fontSize=22,

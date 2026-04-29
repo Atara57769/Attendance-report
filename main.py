@@ -9,13 +9,13 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     logger.info("Starting attendance report processing")
     
     # Create service with DI (no container)
-    service = AttendanceReportService()
+    service: AttendanceReportService = AttendanceReportService()
     
     try:
         service.process(r"D:\input_pdfs\n_r_5_n.pdf")

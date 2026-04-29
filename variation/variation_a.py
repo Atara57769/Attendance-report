@@ -1,6 +1,5 @@
 from datetime import time
 import random
-from typing import List
 
 from core.models.attendance_report_models import AttendanceReport, AttendanceRow
 from variation.base_variation import BaseVariationService
@@ -18,7 +17,11 @@ class VariationA(BaseVariationService):
                "sum": new_sum}
         )
 
-    def _recalculate_totals(self, original: AttendanceReport, rows: List[AttendanceRow]) -> dict:
+    def _recalculate_totals(
+        self,
+        original: AttendanceReport,
+        rows: list[AttendanceRow],
+    ) -> dict[str, float | int | None]:
         total_hours = round(sum(r.sum for r in rows if r.sum), 2)
 
         return {

@@ -11,8 +11,8 @@ from datetime import time, timedelta
 from typing import Optional
 import logging
 
-from core.exceptions import TransformationError
 from core.models.attendance_report_models import AttendanceRow, AttendanceReport
+from variation.base_variation import BaseVariationService
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class ValidatingStrategyDecorator:
     If validation fails, returns the original row.
     """
     
-    def __init__(self, inner_strategy):
+    def __init__(self, inner_strategy: BaseVariationService) -> None:
         """
         Initialize with an inner variation strategy.
         
@@ -67,7 +67,7 @@ class ValidatingStrategyDecorator:
             return original_report
         
         # Validate each transformed row
-        validated_rows = []
+        validated_rows: list[AttendanceRow] = []
         for i, row in enumerate(transformed_report.rows):
             original_row = report.rows[i] if i < len(report.rows) else row
             validated_row = self._validate_row(row, original_row)
@@ -88,7 +88,11 @@ class ValidatingStrategyDecorator:
             travel=transformed_report.travel,
         )
     
-    def _validate_row(self, row: AttendanceRow, original_row: AttendanceRow = None) -> AttendanceRow:
+    def _validate_row(
+        self,
+        row: AttendanceRow,
+        original_row: AttendanceRow | None = None,
+    ) -> AttendanceRow:
         """
         Validate a single transformed row.
         

@@ -1,10 +1,18 @@
 from typing import Optional
 from core.models.attendance_report_models import AttendanceReport
+from parse.base_parser import BaseParsingService
+from pdf_render.base_render import BasePDFService
+from variation.validating_strategy_decorator import ValidatingStrategyDecorator
 
 
 class ReportProcessor:
 
-    def __init__(self, parser, variation_service, pdf_service):
+    def __init__(
+        self,
+        parser: BaseParsingService,
+        variation_service: ValidatingStrategyDecorator,
+        pdf_service: BasePDFService,
+    ) -> None:
         self.parser = parser
         self.variation = variation_service
         self.pdf = pdf_service

@@ -1,11 +1,12 @@
 from core.exceptions import UnknownReportTypeError, ConfigurationError
 from enums.report_type import ReportType
 import logging
+from collections.abc import Callable
 
 from parse.parser_a import ParserA
 from parse.parser_b import ParserB
-from pdf_rander.rander_a import PDFServiceA
-from pdf_rander.rander_b import PDFServiceB
+from pdf_render.render_a import PDFServiceA
+from pdf_render.render_b import PDFServiceB
 from processors.report_processor import ReportProcessor
 from variation.variation_a import VariationA
 from variation.variation_b import VariationB
@@ -16,13 +17,13 @@ logger = logging.getLogger(__name__)
 
 class ProcessorFactory:
 
-    def __init__(self):
-        self._map = {
+    def __init__(self) -> None:
+        self._map: dict[ReportType, Callable[[], ReportProcessor]] = {
             ReportType.A: self._create_a,
             ReportType.B: self._create_b,
         }
 
-    def _create_a(self):
+    def _create_a(self) -> ReportProcessor:
         try:
             return ReportProcessor(
                 parser=ParserA(),
@@ -33,7 +34,7 @@ class ProcessorFactory:
             logger.error(f"Failed to create ProcessorA: {e}")
             raise ConfigurationError(f"Failed to create ProcessorA: {e}") from e
 
-    def _create_b(self):
+    def _create_b(self) -> ReportProcessor:
         try:
             return ReportProcessor(
                 parser=ParserB(),

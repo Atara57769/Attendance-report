@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, time
-from typing import Optional, List
+from typing import Optional
 import random
 import logging
 
@@ -58,7 +58,7 @@ class BaseVariationService(ABC):
             logger.warning(f"Failed to process row, returning original: {e}")
             return row
 
-    def _shift_times(self, entry: time, exit: time, rng: random.Random):
+    def _shift_times(self, entry: time, exit: time, rng: random.Random) -> tuple[time, time]:
         try:
             e = datetime.combine(datetime.today(), entry)
             x = datetime.combine(datetime.today(), exit)
@@ -86,5 +86,9 @@ class BaseVariationService(ABC):
         pass
 
     @abstractmethod
-    def _recalculate_totals(self, original: AttendanceReport, rows: List[AttendanceRow]) -> dict:
-        pass
+    def _recalculate_totals(
+        self,
+        original: AttendanceReport,
+        rows: list[AttendanceRow],
+    ) -> dict[str, float | int | None]:
+        raise NotImplementedError
