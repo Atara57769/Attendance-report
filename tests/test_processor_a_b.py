@@ -24,8 +24,8 @@ if 'services.pdf_generator' not in sys.modules:
     sys.modules['services.pdf_generator'] = pdf_mod
 
 from unittest.mock import patch
-from processores.processor_a import ProcessorA
-from processores.processor_b import ProcessorB
+from processors.processor_a import ProcessorA
+from processors.processor_b import ProcessorB
 
 
 class TestProcessorA(unittest.TestCase):
@@ -46,7 +46,7 @@ class TestProcessorA(unittest.TestCase):
         self.assertIn('ראשון', row.note)
         self.assertIn('טסט', row.note)
 
-    @patch('processores.processor_a.TimeVariationService.apply_variation', return_value=('09:05', '17:05', 8.0))
+    @patch('processors.processor_a.TimeVariationService.apply_variation', return_value=('09:05', '17:05', 8.0))
     def test_apply_variation_updates_model_totals(self, mock_variation):
         raw_text = 'ראשון 01/01 09:00 17:00 8.00 טסט'
         processor = ProcessorA()
@@ -59,7 +59,7 @@ class TestProcessorA(unittest.TestCase):
         self.assertEqual(result.rows[0].entry_time, '09:05')
         self.assertEqual(result.rows[0].end_time, '17:05')
 
-    @patch('processores.processor_a.PDFGenerator.create_report_a_pdf', return_value='report_a.pdf')
+    @patch('processors.processor_a.PDFGenerator.create_report_a_pdf', return_value='report_a.pdf')
     def test_generate_pdf_delegates_to_pdf_generator(self, mock_create_pdf):
         raw_text = 'ראשון 01/01 09:00 17:00 8.00 טסט'
         processor = ProcessorA()
@@ -89,9 +89,9 @@ class TestProcessorB(unittest.TestCase):
         self.assertEqual(report.total_100, 4.0)
         self.assertEqual(report.total_hours, 5.0)
 
-    @patch('processores.processor_b.TimeVariationService.apply_variation', return_value=('09:00', '17:00', 8.0))
-    @patch('processores.processor_b.TimeVariationService.apply_break_variation', return_value='00:30')
-    @patch('processores.processor_b.TimeVariationService.calculate_hours_with_break', return_value=7.5)
+    @patch('processors.processor_b.TimeVariationService.apply_variation', return_value=('09:00', '17:00', 8.0))
+    @patch('processors.processor_b.TimeVariationService.apply_break_variation', return_value='00:30')
+    @patch('processors.processor_b.TimeVariationService.calculate_hours_with_break', return_value=7.5)
     def test_apply_variation_updates_row_and_totals(self, mock_hours, mock_break, mock_variation):
         raw_text = (
             'ראשון 01/01 09:00 17:00 00:30 8.00 100.00 125.00 150.00 2.00\n'
@@ -110,7 +110,7 @@ class TestProcessorB(unittest.TestCase):
         self.assertEqual(report.total_150, 0.0)
         self.assertEqual(report.total_saturday, 22.5)
 
-    @patch('processores.processor_b.PDFGenerator.create_report_b_pdf', return_value='report_b.pdf')
+    @patch('processors.processor_b.PDFGenerator.create_report_b_pdf', return_value='report_b.pdf')
     def test_generate_pdf_delegates_to_pdf_generator(self, mock_create_pdf):
         raw_text = 'ראשון 01/01 09:00 17:00 00:30 8.00 100.00 125.00 150.00 2.00\n1.00 2.00 3.00 4.00 5.00 08:00'
         processor = ProcessorB()

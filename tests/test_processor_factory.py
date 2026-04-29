@@ -24,8 +24,8 @@ if 'services.pdf_generator' not in sys.modules:
     sys.modules['services.pdf_generator'] = pdf_mod
 
 from factory.processor_factory import get_processor
-from processores.processor_a import ProcessorA
-from processores.processor_b import ProcessorB
+from processors.processor_a import ProcessorA
+from processors.processor_b import ProcessorB
 
 
 class TestProcessorFactory(unittest.TestCase):

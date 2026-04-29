@@ -1,30 +1,42 @@
+from enums.report_type import ReportType
+from processors.processor_a import ProcessorA
+from processors.processor_b import ProcessorB
+from services.attendance_parsing_service import AttendanceParsingService
+from services.pdf_generator_service import PDFGenerator
+from services.time_variation_service import TimeVariationService
 
-import re
 
-from processores.processor_a import ProcessorA
-from processores.processor_b import ProcessorB
+class ProcessorFactory:
+    def __init__(self):
+        # singletons חיים כאן 👇
+        self._parsing_service = AttendanceParsingService()
+        self._pdf_generator = PDFGenerator()
+        self._time_variation_service = TimeVariationService()
 
+        # mapping
+        self._processor_map = {
+            ReportType.A: self._create_processor_a,
+            ReportType.B: self._create_processor_b,
+        }
 
-def get_processor(raw_text: str):
-    """
-    Determine the correct processor based on robust OCR-friendly keywords.
-    """
-    # Check for Report B indicators: The word "הפסקה" (Break), the company name "הנשר",
-    # or the presence of the exact numbers 125 / 150 (with or without %).
-    is_report_b = bool(re.search(r'הנשר|הפסקה|\b125\b|\b150\b|125%|150%|\%\s*150|\%\s*125', raw_text))
+    def _create_processor_a(self):
+        return ProcessorA(
+            self._parsing_service,
+            self._time_variation_service,
+            self._pdf_generator
+        )
 
-    # Check for Report A indicators: The words "מחיר לשעה" or "לתשלום"
-    is_report_a = bool(re.search(r'מחיר\s*לשעה|לתשלום', raw_text))
+    def _create_processor_b(self):
+        return ProcessorB(
+            self._parsing_service,
+            self._time_variation_service,
+            self._pdf_generator
+        )
 
-    # Prioritize based on the strongest matches
-    if is_report_b and not is_report_a:
-        return ProcessorB()
-    elif is_report_a:
-        return ProcessorA()
+    def get(self, report_type: ReportType):
+        factory = self._processor_map.get(report_type)
 
-    # Fallback: if we just see 150 or 125 floating around, it's likely B
-    if '150' in raw_text or '125' in raw_text:
-        return ProcessorB()
+        if not factory:
+            raise ValueError(f"No processor for {report_type}")
 
-    # Default to A if we can't be sure
-    return ProcessorA()
+        return factory()

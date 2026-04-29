@@ -4,15 +4,22 @@ from datetime import datetime, timedelta
 import random
 
 from core.models.attendance_report_models import AttendanceReport, AttendanceRow
-from processores.parse_processor import AttendanceParsingService
-from services.pdf_generator import PDFGenerator
+from services.attendance_parsing_service import AttendanceParsingService
+from services.pdf_generator_service import PDFGenerator
 from services.time_variation_service import TimeVariationService
 
 
 class ProcessorA:
 
-    def __init__(self):
-        self.svc = AttendanceParsingService()
+    def __init__(
+        self,
+        parsing_service: AttendanceParsingService = None,
+        time_variation_service: TimeVariationService = None,
+        pdf_generator: PDFGenerator = None,
+    ):
+        self.svc = parsing_service or AttendanceParsingService()
+        self.time_variation = time_variation_service or TimeVariationService()
+        self.pdf_gen = pdf_generator or PDFGenerator()
 
     def parse(self, raw_text: str):
         lines = raw_text.strip().split('\n')
@@ -66,7 +73,7 @@ class ProcessorA:
         new_rows = []
         for row in model.rows:
             if row.entry_time and row.end_time:
-                e, x, h = TimeVariationService.apply_variation(
+                e, x, h = self.time_variation.apply_variation(
                     row.entry_time,
                     row.end_time
                 )
@@ -91,8 +98,8 @@ class ProcessorA:
             else:
                 new_rows.append(row)
 
-        total_hours = TimeVariationService.calculate_total_hours(new_rows)
-        total_days = TimeVariationService.calculate_total_days(new_rows)
+        total_hours = self.time_variation.calculate_total_hours(new_rows)
+        total_days = self.time_variation.calculate_total_days(new_rows)
 
         return AttendanceReport(
             rows=new_rows,
@@ -109,9 +116,4 @@ class ProcessorA:
         )
 
     def generate_pdf(self, model: AttendanceReport) -> str:
-        """
-        Generate PDF report for AttendanceReport with table and conclusions.
-        
-        """
-        pdf_gen = PDFGenerator()
-        return pdf_gen.create_report_a_pdf(model)
+        return self.pdf_gen.create_report_a_pdf(model)

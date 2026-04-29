@@ -5,15 +5,22 @@ from datetime import datetime, timedelta
 import random
 
 from core.models.attendance_report_models import AttendanceReport, AttendanceRow
-from processores.parse_processor import AttendanceParsingService
-from services.pdf_generator import PDFGenerator
+from services.attendance_parsing_service import AttendanceParsingService
+from services.pdf_generator_service import PDFGenerator
 from services.time_variation_service import TimeVariationService
 
 
 class ProcessorB:
 
-    def __init__(self):
-        self.svc = AttendanceParsingService()
+    def __init__(
+        self,
+        parsing_service: AttendanceParsingService = None,
+        time_variation_service: TimeVariationService = None,
+        pdf_generator: PDFGenerator = None,
+    ):
+        self.svc = parsing_service or AttendanceParsingService()
+        self.time_variation = time_variation_service or TimeVariationService()
+        self.pdf_gen = pdf_generator or PDFGenerator()
 
     def parse(self, raw_text: str):
         lines = raw_text.strip().split('\n')
@@ -93,7 +100,7 @@ class ProcessorB:
                 new_rows.append(row)
                 continue
 
-            e, x, _ = TimeVariationService.apply_variation(
+            e, x, _ = self.time_variation.apply_variation(
                 row.entry_time,
                 row.end_time
             )
@@ -104,9 +111,9 @@ class ProcessorB:
 
             new_break_time = row.break_time
             if row.break_time:
-                new_break_time = TimeVariationService.apply_break_variation(row.break_time)
+                new_break_time = self.time_variation.apply_break_variation(row.break_time)
 
-            new_sum = TimeVariationService.calculate_hours_with_break(
+            new_sum = self.time_variation.calculate_hours_with_break(
                 e,
                 x,
                 new_break_time
@@ -149,8 +156,8 @@ class ProcessorB:
                 col_saturday=new_col_saturday,
             ))
 
-        total_hours = TimeVariationService.calculate_total_hours(new_rows)
-        total_days = TimeVariationService.calculate_total_days(new_rows)
+        total_hours = self.time_variation.calculate_total_hours(new_rows)
+        total_days = self.time_variation.calculate_total_days(new_rows)
 
         return AttendanceReport(
             rows=new_rows,
@@ -166,9 +173,4 @@ class ProcessorB:
             travel=model.travel,
         )
     def generate_pdf(self, model: AttendanceReport) -> str:
-        """
-        Generate PDF report for AttendanceReport with table and conclusions.
-        
-        """
-        pdf_gen = PDFGenerator()
-        return pdf_gen.create_report_b_pdf(model)
+        return self.pdf_gen.create_report_b_pdf(model)

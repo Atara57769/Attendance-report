@@ -42,7 +42,7 @@ if 'pytesseract' not in sys.modules:
     sys.modules['pytesseract'] = pytesseract
 
 from unittest.mock import MagicMock, patch
-from services.attendance_report import process_attendance_report
+from services.attendance_report_service import process_attendance_report
 
 
 class TestAttendanceReport(unittest.TestCase):
