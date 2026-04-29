@@ -22,6 +22,7 @@ class AttendanceParsingService:
                     h, m = int(parts[0]), int(parts[1])
                     if h < 24 and m < 60:
                         times.append(f"{h:02d}:{m:02d}")
+
             elif t.isdigit():
                 val = int(t)
                 if 100 <= val <= 2359:
