@@ -108,10 +108,10 @@ class ProcessorA:
             travel=model.travel,
         )
 
-    def generate_pdf(self, model: AttendanceReport, output_dir: str = "output", filename: str = None) -> str:
+    def generate_pdf(self, model: AttendanceReport) -> str:
         """
         Generate PDF report for AttendanceReport with table and conclusions.
         
         """
-        pdf_gen = PDFGenerator(output_dir)
-        return pdf_gen.create_report_a_pdf(model, filename)
+        pdf_gen = PDFGenerator()
+        return pdf_gen.create_report_a_pdf(model)

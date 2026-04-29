@@ -13,5 +13,5 @@ class ReportProcessor(Protocol[T]):
     def apply_variation(self, model: T) -> T:
         ...
 
-    def generate_pdf(self, model: T, output_path: str) -> bool:
+    def generate_pdf(self, model: T) -> bool:
         ...

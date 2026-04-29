@@ -10,18 +10,19 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
-
+_OUTPUT_DIR_PATH="../output"
 class PDFGenerator:
     """Generate PDF reports from attendance data with tables and conclusions"""
     
-    def __init__(self, output_dir: str = "output"):
+    def __init__(self):
         """
         Initialize PDF generator with output directory.
         
         Args:
             output_dir: Directory where PDFs will be saved
         """
-        self.output_dir = Path(output_dir)
+        
+        self.output_dir = Path(_OUTPUT_DIR_PATH)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
