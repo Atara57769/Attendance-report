@@ -45,12 +45,13 @@ class ValidatingStrategyDecorator:
         """
         self._inner = inner_strategy
     
-    def apply(self, report: AttendanceReport) -> AttendanceReport:
+    def apply(self, report: AttendanceReport, seed: Optional[int] = None) -> AttendanceReport:
         """
         Apply variation and validate the result.
         
         Args:
             report: AttendanceReport to transform
+            seed: Optional seed for deterministic random number generation
             
         Returns:
             AttendanceReport with validated transformed rows (or original if validation fails)
@@ -60,7 +61,7 @@ class ValidatingStrategyDecorator:
         
         # Delegate to inner strategy first
         try:
-            transformed_report = self._inner.apply(report)
+            transformed_report = self._inner.apply(report, seed)
         except Exception as e:
             logger.warning(f"Inner strategy failed, returning original: {e}")
             return original_report

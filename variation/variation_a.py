@@ -1,4 +1,5 @@
 from datetime import time
+import random
 from typing import List
 
 from core.models.attendance_report_models import AttendanceReport, AttendanceRow
@@ -7,7 +8,7 @@ from variation.base_variation import BaseVariationService
 
 class VariationA(BaseVariationService):
 
-    def _build_row(self, row: AttendanceRow, e: time, x: time) -> AttendanceRow:
+    def _build_row(self, row: AttendanceRow, e: time, x: time, rng: random.Random) -> AttendanceRow:
         new_sum = self._calculate_hours(e, x)
 
         return AttendanceRow(

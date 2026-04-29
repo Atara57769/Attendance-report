@@ -1,3 +1,4 @@
+from typing import Optional
 from core.models.attendance_report_models import AttendanceReport
 
 
@@ -11,8 +12,8 @@ class ReportProcessor:
     def parse(self, raw_text: str) -> AttendanceReport:
         return self.parser.parse(raw_text)
 
-    def apply_variation(self, report: AttendanceReport) -> AttendanceReport:
-        return self.variation.apply(report)
+    def apply_variation(self, report: AttendanceReport, seed: Optional[int] = None) -> AttendanceReport:
+        return self.variation.apply(report, seed)
 
     def generate_pdf(self, report: AttendanceReport) -> str:
         return self.pdf.generate(report)
