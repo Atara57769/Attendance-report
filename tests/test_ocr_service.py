@@ -1,51 +1,51 @@
-import os
-import sys
-import types
+import pytest
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
-
-# Minimal stub modules to allow import-time loading of OCR repository code
-if 'fitz' not in sys.modules:
-    sys.modules['fitz'] = types.ModuleType('fitz')
-if 'PIL' not in sys.modules:
-    PIL = types.ModuleType('PIL')
-    PIL.__path__ = []
-    sys.modules['PIL'] = PIL
-if 'PIL.Image' not in sys.modules:
-    sys.modules['PIL.Image'] = types.ModuleType('PIL.Image')
-if 'cv2' not in sys.modules:
-    sys.modules['cv2'] = types.ModuleType('cv2')
-if 'numpy' not in sys.modules:
-    sys.modules['numpy'] = types.ModuleType('numpy')
-if 'pytesseract' not in sys.modules:
-    pytesseract = types.ModuleType('pytesseract')
-    pytesseract.pytesseract = types.SimpleNamespace(tesseract_cmd='')
-    sys.modules['pytesseract'] = pytesseract
-
-import unittest
-from unittest.mock import patch
-from services.ocr_service import pdf_to_text, clean_text
+from core.exceptions import OCRProcessingError
+from services import ocr_service
 
 
-class TestOCRService(unittest.TestCase):
+def test_pdf_to_text_happy_path(monkeypatch):
+    monkeypatch.setattr(ocr_service.os.path, "exists", lambda path: True)
+    monkeypatch.setattr(ocr_service, "pdf_to_images", lambda path: ["img1", "img2"])
+    monkeypatch.setattr(ocr_service, "extract_text_from_images", lambda images: "raw text")
+    monkeypatch.setattr(ocr_service, "clean_text", lambda text: "clean text")
 
-    @patch('services.ocr_service.os.path.exists', return_value=True)
-    @patch('services.ocr_service.extract_text_from_images', return_value='hello world')
-    @patch('services.ocr_service.pdf_to_images', return_value=['image'])
-    def test_pdf_to_text_calls_extraction(self, mock_pdf_to_images, mock_extract_text, mock_exists):
-        result = pdf_to_text('dummy.pdf')
+    result = ocr_service.pdf_to_text("report.pdf")
 
-        mock_exists.assert_called_once_with('dummy.pdf')
-        mock_pdf_to_images.assert_called_once_with('dummy.pdf')
-        mock_extract_text.assert_called_once_with(['image'])
-        self.assertEqual(result, 'hello world')
+    assert result == "clean text"
 
-    def test_pdf_to_text_raises_when_file_missing(self):
-        with self.assertRaises(FileNotFoundError):
-            pdf_to_text('missing.pdf')
 
-    def test_clean_text_returns_original_text(self):
-        sample = 'This is a test\nLine 2'
-        self.assertEqual(clean_text(sample), sample)
+def test_pdf_to_text_missing_file(monkeypatch):
+    monkeypatch.setattr(ocr_service.os.path, "exists", lambda path: False)
+
+    with pytest.raises(FileNotFoundError, match="PDF file not found: report.pdf"):
+        ocr_service.pdf_to_text("report.pdf")
+
+
+def test_pdf_to_text_pdf_to_images_failure(monkeypatch):
+    monkeypatch.setattr(ocr_service.os.path, "exists", lambda path: True)
+    monkeypatch.setattr(
+        ocr_service,
+        "pdf_to_images",
+        lambda path: (_ for _ in ()).throw(RuntimeError("render failed")),
+    )
+
+    with pytest.raises(OCRProcessingError, match="Failed to convert PDF to images: render failed"):
+        ocr_service.pdf_to_text("report.pdf")
+
+
+def test_pdf_to_text_extract_failure(monkeypatch):
+    monkeypatch.setattr(ocr_service.os.path, "exists", lambda path: True)
+    monkeypatch.setattr(ocr_service, "pdf_to_images", lambda path: ["img1"])
+    monkeypatch.setattr(
+        ocr_service,
+        "extract_text_from_images",
+        lambda images: (_ for _ in ()).throw(RuntimeError("ocr failed")),
+    )
+
+    with pytest.raises(OCRProcessingError, match="Failed to extract text from images: ocr failed"):
+        ocr_service.pdf_to_text("report.pdf")
+
+
+def test_clean_text_returns_input():
+    assert ocr_service.clean_text("some text") == "some text"

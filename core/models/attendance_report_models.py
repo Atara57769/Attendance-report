@@ -1,27 +1,27 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
+from datetime import date, time
 
 @dataclass(frozen=True)
 class AttendanceRow:
-    # שדות בסיסיים
-    date: Optional[str] = None
+    date: Optional[date] = None
     day: Optional[str] = None
-    entry_time: Optional[str] = None
-    end_time: Optional[str] = None
+    entry_time: Optional[time] = None
+    end_time: Optional[time] = None
     sum: Optional[float] = None
     
-    # שדות נוספים
     note: Optional[str] = None
     location: Optional[str] = None 
-    break_time: Optional[str] = None     
+    break_time: Optional[time] = None     
     col_100: Optional[float] = None  
     col_125: Optional[float] = None 
     col_150: Optional[float] = None     
     col_saturday: Optional[float] = None 
 
+
 @dataclass(frozen=True)
 class AttendanceReport:
-    rows: List[AttendanceRow] = field(default_factory=list)
+    rows: list[AttendanceRow] = field(default_factory=list)
     
     total_hours: Optional[float] = None
     total_days: Optional[int] = None

@@ -1,4 +1,7 @@
 import logging
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
 
 from core.exceptions import OCRProcessingError
 
@@ -6,7 +9,7 @@ from core.exceptions import OCRProcessingError
 logger = logging.getLogger(__name__)
 
 
-def pdf_to_images(pdf_path):
+def pdf_to_images(pdf_path: str | Path) -> list[Any]:
     """Convert PDF to images with error handling."""
     try:
         import fitz
@@ -32,7 +35,7 @@ def pdf_to_images(pdf_path):
         raise OCRProcessingError(error_msg) from e
 
 
-def preprocess_image(image):
+def preprocess_image(image: Any) -> Any:
     """Preprocess image for OCR with error handling."""
     try:
         import cv2
@@ -54,17 +57,20 @@ def preprocess_image(image):
         raise OCRProcessingError(error_msg) from e
 
 
-def extract_text_from_images(images):
+def extract_text_from_images(images: Sequence[Any]) -> str:
     """Extract text from images using OCR with error handling."""
     try:
         import pytesseract
+        import os
     except ImportError as exc:
         error_msg = 'pytesseract is required to extract text from images'
         logger.error(error_msg)
         raise OCRProcessingError(error_msg) from exc
 
     try:
-        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        tesseract_path = os.environ.get("TESSERACT_CMD")
+        if tesseract_path:
+            pytesseract.pytesseract.tesseract_cmd = tesseract_path
     except Exception as e:
         logger.warning(f"Could not set tesseract path: {e}")
 
