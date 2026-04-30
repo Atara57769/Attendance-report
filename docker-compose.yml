@@ -4,8 +4,8 @@ services:
     image: attendance-report
     container_name: attendance_container
     volumes:
-      - "D:/input_pdfs:/data/input"
-      - "./output:/app/output"
+      - "./samples/input:/data/input"
+      - "./output:/output"
     environment:
       - TESSERACT_CMD=/usr/bin/tesseract
-    command: ["/data/input/a_r_25.pdf", "-o", "/app/output"]
+    command: ["/data/input/sample_report_a.pdf", "-o", "/app/output"]
