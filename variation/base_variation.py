@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class BaseVariationService(ABC):
 
     # ---------- PUBLIC ----------
-    def apply(self, report: AttendanceReport, seed: Optional[int] = None) -> AttendanceReport:
+    def apply(self, report: AttendanceReport, seed: Optional[int] = None, max_variation_minutes: int = 20) -> AttendanceReport:
         # Determine seed: use provided seed, or extract from report date, or default to 42
         if seed is None:
             seed = self._get_seed_from_report(report)
@@ -22,7 +22,7 @@ class BaseVariationService(ABC):
         rng = random.Random(seed)
         
         try:
-            new_rows = [self._process_row(r, rng) for r in report.rows]
+            new_rows = [self._process_row(r, rng, max_variation_minutes) for r in report.rows]
 
             return AttendanceReport(
                 rows=new_rows,
@@ -43,28 +43,25 @@ class BaseVariationService(ABC):
         return 42
 
     # ---------- ROW PROCESS ----------
-    def _process_row(self, row: AttendanceRow, rng: random.Random) -> AttendanceRow:
+    def _process_row(self, row: AttendanceRow, rng: random.Random, max_variation_minutes: int = 20) -> AttendanceRow:
         try:
             if not row.entry_time or not row.end_time:
                 return row
 
-            e, x = self._shift_times(row.entry_time, row.end_time, rng)
+            e, x = self._shift_times(row.entry_time, row.end_time, rng, max_variation_minutes)
 
-            if x <= e:
-                x = (datetime.combine(datetime.today(), e) + timedelta(minutes=1)).time()
-
-            return self._build_row(row, e, x, rng)
+            return self._build_row(row, e, x, rng, max_variation_minutes)
         except Exception as e:
             logger.warning(f"Failed to process row, returning original: {e}")
             return row
 
-    def _shift_times(self, entry: time, exit: time, rng: random.Random) -> tuple[time, time]:
+    def _shift_times(self, entry: time, exit: time, rng: random.Random, max_variation_minutes: int = 20) -> tuple[time, time]:
         try:
             e = datetime.combine(datetime.today(), entry)
             x = datetime.combine(datetime.today(), exit)
 
-            e += timedelta(minutes=rng.randint(0, 20))
-            x += timedelta(minutes=rng.randint(0, 20))
+            e += timedelta(minutes=rng.randint(-max_variation_minutes, max_variation_minutes))
+            x += timedelta(minutes=rng.randint(-max_variation_minutes, max_variation_minutes))
 
             return e.time(), x.time()
         except Exception as e:
@@ -80,9 +77,12 @@ class BaseVariationService(ABC):
             logger.error(f"Failed to calculate hours: {e}")
             return 0.0
 
+    def _calculate_total_hours(self, rows: list[AttendanceRow]) -> float:
+        return round(sum(r.sum for r in rows if r.sum), 2)
+
     # ---------- ABSTRACT ----------
     @abstractmethod
-    def _build_row(self, row: AttendanceRow, e: time, x: time, rng: random.Random) -> AttendanceRow:
+    def _build_row(self, row: AttendanceRow, e: time, x: time, rng: random.Random, max_variation_minutes: int = 20) -> AttendanceRow:
         pass
 
     @abstractmethod

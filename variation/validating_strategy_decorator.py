@@ -3,7 +3,7 @@ ValidatingStrategyDecorator - wraps transformation strategies with validation.
 
 This decorator validates the transformed row before returning it:
 - exit_time must be > entry_time
-- entry/exit time change must be within 0-20 minutes
+- entry/exit time change must be within +/- 20 minutes
 - break_time should be around 15 minutes (with tolerance)
 - If validation fails, return the original row
 """
@@ -23,8 +23,8 @@ TIME_MAX = time(23, 59) # 23:59 - latest allowed
 
 # Variation constraints
 MAX_VARIATION_MINUTES = 20  # Maximum allowed change in minutes
-BREAK_TIME_TARGET = 15      # Target break time in minutes
-BREAK_TIME_TOLERANCE = 5    # Tolerance in minutes (+/-)
+BREAK_TIME_TARGET = 30      # Target break time in minutes
+BREAK_TIME_TOLERANCE = 20    # Tolerance in minutes (+/-)
 
 
 class ValidatingStrategyDecorator:
@@ -61,7 +61,7 @@ class ValidatingStrategyDecorator:
         
         # Delegate to inner strategy first
         try:
-            transformed_report = self._inner.apply(report, seed)
+            transformed_report = self._inner.apply(report, seed, max_variation_minutes=MAX_VARIATION_MINUTES)
         except Exception as e:
             logger.warning(f"Inner strategy failed, returning original: {e}")
             return original_report
@@ -98,8 +98,8 @@ class ValidatingStrategyDecorator:
         
         Validations:
         1. exit_time > entry_time
-        2. entry/exit time change must be within 0-20 minutes
-        3. break_time should be around 15 minutes (with tolerance)
+        2. entry/exit time change must be within +/- 20 minutes
+        3. break_time should be around 40 minutes (with tolerance)
         
         Args:
             row: AttendanceRow to validate
@@ -137,7 +137,7 @@ class ValidatingStrategyDecorator:
                 )
                 return original_row
             
-            # Validation 3: Check that time change is within 0-20 minutes
+            # Validation 3: Check that time change is within +/- 20 minutes
             if original_row.entry_time and original_row.end_time:
                 entry_diff = abs(self._time_diff_minutes(row.entry_time, original_row.entry_time))
                 exit_diff = abs(self._time_diff_minutes(row.end_time, original_row.end_time))

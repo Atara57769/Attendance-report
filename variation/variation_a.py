@@ -7,7 +7,7 @@ from variation.base_variation import BaseVariationService
 
 class VariationA(BaseVariationService):
 
-    def _build_row(self, row: AttendanceRow, e: time, x: time, rng: random.Random) -> AttendanceRow:
+    def _build_row(self, row: AttendanceRow, e: time, x: time, rng: random.Random, max_variation_minutes: int = 20) -> AttendanceRow:
         new_sum = self._calculate_hours(e, x)
 
         return AttendanceRow(
@@ -22,7 +22,7 @@ class VariationA(BaseVariationService):
         original: AttendanceReport,
         rows: list[AttendanceRow],
     ) -> dict[str, float | int | None]:
-        total_hours = round(sum(r.sum for r in rows if r.sum), 2)
+        total_hours = self._calculate_total_hours(rows)
 
         return {
             "total_hours": total_hours,

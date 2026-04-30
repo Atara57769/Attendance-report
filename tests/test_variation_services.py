@@ -16,7 +16,7 @@ class DummyVariation(BaseVariationService):
         self.raise_in_build = False
         self.raise_in_recalc = False
 
-    def _build_row(self, row, e, x, rng):
+    def _build_row(self, row, e, x, rng, max_variation_minutes: int = 20):
         if self.raise_in_build:
             raise RuntimeError("build failed")
         return AttendanceRow(**{**row.__dict__, "entry_time": e, "end_time": x, "sum": self._calculate_hours(e, x)})
@@ -32,7 +32,7 @@ def test_base_variation_apply_happy_path_and_default_seed():
     report = AttendanceReport(rows=[AttendanceRow(date=date(2026, 4, 29), entry_time=time(8, 0), end_time=time(16, 0))])
     result = svc.apply(report)
     assert result.total_days == 1
-    assert result.rows[0].entry_time >= time(8, 0)
+    assert time(7, 40) <= result.rows[0].entry_time <= time(8, 20)
 
 
 def test_get_seed_from_report_and_default():
@@ -60,8 +60,8 @@ def test_shift_times_and_calculate_hours():
     svc = DummyVariation()
     rng = random.Random(1)
     entry, exit = svc._shift_times(time(8, 0), time(16, 0), rng)
-    assert entry >= time(8, 0)
-    assert exit >= time(16, 0)
+    assert time(7, 40) <= entry <= time(8, 20)
+    assert time(15, 40) <= exit <= time(16, 20)
     assert svc._calculate_hours(time(8, 0), time(16, 30)) == 8.5
 
 
@@ -100,7 +100,7 @@ def test_variation_a_build_row_and_recalculate():
 def test_variation_b_break_and_totals():
     svc = VariationB()
     shifted = svc._shift_break(time(0, 15), random.Random(1))
-    assert shifted >= time(0, 15)
+    assert time(0, 0) <= shifted <= time(0, 35) or shifted >= time(23, 0)
     assert svc._shift_break(None, random.Random(1)) is None
     assert svc._calculate_with_break(time(8, 0), time(17, 0), time(0, 30)) == 8.5
     assert svc._calculate_with_break(time(8, 0), time(7, 0), None) == 0.0
@@ -113,16 +113,16 @@ def test_variation_b_break_and_totals():
 
 
 def test_validating_decorator_apply_happy_path():
-    original = AttendanceReport(rows=[AttendanceRow(entry_time=time(8, 0), end_time=time(16, 0), break_time=time(0, 15))])
-    transformed = AttendanceReport(rows=[AttendanceRow(entry_time=time(8, 10), end_time=time(16, 10), break_time=time(0, 15))], total_hours=8.0)
-    inner = type("Inner", (), {"apply": lambda self, report, seed=None: transformed})()
+    original = AttendanceReport(rows=[AttendanceRow(entry_time=time(8, 0), end_time=time(16, 0), break_time=time(0, 40))])
+    transformed = AttendanceReport(rows=[AttendanceRow(entry_time=time(8, 10), end_time=time(16, 10), break_time=time(0, 40))], total_hours=8.0)
+    inner = type("Inner", (), {"apply": lambda self, report, seed=None, **kwargs: transformed})()
     result = ValidatingStrategyDecorator(inner).apply(original, seed=1)
     assert result.rows[0].entry_time == time(8, 10)
 
 
 def test_validating_decorator_returns_original_when_inner_fails():
     original = AttendanceReport(rows=[AttendanceRow(entry_time=time(8, 0), end_time=time(16, 0))])
-    inner = type("Inner", (), {"apply": lambda self, report, seed=None: (_ for _ in ()).throw(RuntimeError("boom"))})()
+    inner = type("Inner", (), {"apply": lambda self, report, seed=None, **kwargs: (_ for _ in ()).throw(RuntimeError("boom"))})()
     assert ValidatingStrategyDecorator(inner).apply(original) is original
 
 
@@ -131,12 +131,12 @@ def test_validating_decorator_returns_original_when_inner_fails():
     [
         (AttendanceRow(entry_time=time(8, 0), end_time=time(7, 59)), AttendanceRow(entry_time=time(8, 0), end_time=time(16, 0)), True),
         (AttendanceRow(entry_time=time(5, 59), end_time=time(16, 0)), AttendanceRow(entry_time=time(8, 0), end_time=time(16, 0)), True),
-        (AttendanceRow(entry_time=time(8, 0), end_time=time(23, 59), break_time=time(0, 25)), AttendanceRow(entry_time=time(8, 0), end_time=time(23, 30), break_time=time(0, 15)), True),
-        (AttendanceRow(entry_time=time(8, 10), end_time=time(16, 5), break_time=time(0, 15)), AttendanceRow(entry_time=time(8, 0), end_time=time(16, 0), break_time=time(0, 15)), False),
+        (AttendanceRow(entry_time=time(8, 0), end_time=time(23, 59), break_time=time(0, 50)), AttendanceRow(entry_time=time(8, 0), end_time=time(23, 30), break_time=time(0, 40)), True),
+        (AttendanceRow(entry_time=time(8, 10), end_time=time(16, 5), break_time=time(0, 40)), AttendanceRow(entry_time=time(8, 0), end_time=time(16, 0), break_time=time(0, 40)), False),
     ],
 )
 def test_validating_decorator_validate_row(row, original_row, expect_original):
-    decorator = ValidatingStrategyDecorator(type("Inner", (), {"apply": lambda self, report, seed=None: report})())
+    decorator = ValidatingStrategyDecorator(type("Inner", (), {"apply": lambda self, report, seed=None, **kwargs: report})())
     result = decorator._validate_row(row, original_row)
     if expect_original:
         assert result is original_row
@@ -145,14 +145,14 @@ def test_validating_decorator_validate_row(row, original_row, expect_original):
 
 
 def test_validating_decorator_validate_row_handles_errors(monkeypatch):
-    decorator = ValidatingStrategyDecorator(type("Inner", (), {"apply": lambda self, report, seed=None: report})())
+    decorator = ValidatingStrategyDecorator(type("Inner", (), {"apply": lambda self, report, seed=None, **kwargs: report})())
     row = AttendanceRow(entry_time=time(8, 0), end_time=time(16, 0))
     monkeypatch.setattr(decorator, "_is_time_in_range", lambda *args: (_ for _ in ()).throw(RuntimeError("bad check")))
     assert decorator._validate_row(row, row) is row
 
 
 def test_validating_decorator_helpers():
-    decorator = ValidatingStrategyDecorator(type("Inner", (), {"apply": lambda self, report, seed=None: report})())
+    decorator = ValidatingStrategyDecorator(type("Inner", (), {"apply": lambda self, report, seed=None, **kwargs: report})())
     assert decorator._is_time_in_range(time(8, 0), time(6, 0), time(23, 59)) is True
     assert decorator._time_diff_minutes(time(8, 30), time(8, 0)) == 30
     assert decorator._time_to_minutes(time(1, 15)) == 75

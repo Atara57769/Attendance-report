@@ -8,9 +8,9 @@ from variation.base_variation import BaseVariationService
 
 class VariationB(BaseVariationService):
 
-    def _build_row(self, row: AttendanceRow, e: time, x: time, rng: random.Random) -> AttendanceRow:
+    def _build_row(self, row: AttendanceRow, e: time, x: time, rng: random.Random, max_variation_minutes: int = 20) -> AttendanceRow:
 
-        new_break = self._shift_break(row.break_time, rng)
+        new_break = self._shift_break(row.break_time, rng, max_variation_minutes)
         new_sum = self._calculate_with_break(e, x, new_break)
 
         return AttendanceRow(
@@ -21,12 +21,12 @@ class VariationB(BaseVariationService):
                "sum": new_sum}
         )
 
-    def _shift_break(self, break_time: Optional[time], rng: random.Random) -> Optional[time]:
+    def _shift_break(self, break_time: Optional[time], rng: random.Random, max_variation_minutes: int = 20) -> Optional[time]:
         if not break_time:
             return break_time
 
         dt = datetime.combine(datetime.today(), break_time)
-        dt += timedelta(minutes=rng.randint(0, 15))
+        dt += timedelta(minutes=rng.randint(-max_variation_minutes, max_variation_minutes))
         return dt.time()
 
     def _calculate_with_break(self, entry: time, exit: time, break_time: Optional[time]) -> float:
@@ -53,7 +53,7 @@ class VariationB(BaseVariationService):
         original: AttendanceReport,
         rows: list[AttendanceRow],
     ) -> dict[str, float | int | None]:
-        total_hours = round(sum(r.sum for r in rows if r.sum), 2)
+        total_hours = self._calculate_total_hours(rows)
 
         return {
             "total_hours": total_hours,
