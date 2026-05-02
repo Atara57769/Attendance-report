@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 class ProcessorFactory:
 
-    def __init__(self) -> None:
+    def __init__(self, output_dir: str = ".") -> None:
+        self.output_dir = output_dir
         self._map: dict[ReportType, Callable[[], ReportProcessor]] = {
             ReportType.A: self._create_a,
             ReportType.B: self._create_b,
@@ -28,7 +29,7 @@ class ProcessorFactory:
             return ReportProcessor(
                 parser=ParserA(),
                 variation_service=ValidatingStrategyDecorator(VariationA()),
-                pdf_service=PDFServiceA()
+                pdf_service=PDFServiceA(output_dir=self.output_dir)
             )
         except Exception as e:
             logger.error(f"Failed to create ProcessorA: {e}")
@@ -39,7 +40,7 @@ class ProcessorFactory:
             return ReportProcessor(
                 parser=ParserB(),
                 variation_service=ValidatingStrategyDecorator(VariationB()),
-                pdf_service=PDFServiceB()
+                pdf_service=PDFServiceB(output_dir=self.output_dir)
             )
         except Exception as e:
             logger.error(f"Failed to create ProcessorB: {e}")

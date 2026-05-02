@@ -17,7 +17,7 @@ def main():
     
     args = parser.parse_args()
 
-    service = AttendanceReportService()
+    service = AttendanceReportService(output_dir=args.output)
     
     try:
         logger.info(f"Starting to process: {args.input}")

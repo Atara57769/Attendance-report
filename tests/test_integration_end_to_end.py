@@ -12,7 +12,7 @@ INTEGRATION_OUTPUT_DIR = Path("tests_output/integration")
 
 
 class FixedPDFServiceA(PDFServiceA):
-    def __init__(self):
+    def __init__(self, output_dir=None):
         super().__init__(output_dir=str(INTEGRATION_OUTPUT_DIR))
 
     def _build_filename(self) -> str:
@@ -20,7 +20,7 @@ class FixedPDFServiceA(PDFServiceA):
 
 
 class FixedPDFServiceB(PDFServiceB):
-    def __init__(self):
+    def __init__(self, output_dir=None):
         super().__init__(output_dir=str(INTEGRATION_OUTPUT_DIR))
 
     def _build_filename(self) -> str:

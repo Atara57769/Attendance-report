@@ -24,8 +24,9 @@ class AttendanceReportService:
         self,
         factory: ProcessorFactory | None = None,
         ocr_service: Callable[[str], str] | None = None,
+        output_dir: str = ".",
     ) -> None:
-        self._factory = factory or ProcessorFactory()
+        self._factory = factory or ProcessorFactory(output_dir=output_dir)
         self._ocr_service = ocr_service or pdf_to_text
 
     def process(self, input_pdf_path: str) -> AttendanceReport:
