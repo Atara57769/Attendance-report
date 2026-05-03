@@ -102,8 +102,8 @@ def test_variation_b_break_and_totals():
     shifted = svc._shift_break(time(0, 15), random.Random(1))
     assert time(0, 0) <= shifted <= time(0, 35) or shifted >= time(23, 0)
     assert svc._shift_break(None, random.Random(1)) is None
-    assert svc._calculate_with_break(time(8, 0), time(17, 0), time(0, 30)) == 8.5
-    assert svc._calculate_with_break(time(8, 0), time(7, 0), None) == 0.0
+    assert svc._calculate_hours(time(8, 0), time(17, 0), time(0, 30)) == 8.5
+    assert svc._calculate_hours(time(8, 0), time(7, 0), None) == 0.0
     totals = svc._recalculate_totals(
         AttendanceReport(rows=[], total_100=1.0, total_125=2.0, total_150=3.0, total_saturday=4.0),
         [AttendanceRow(sum=7.5)],

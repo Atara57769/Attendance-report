@@ -68,11 +68,25 @@ class BaseVariationService(ABC):
             logger.error(f"Failed to shift times: {e}")
             raise TransformationError(f"Failed to shift times: {e}") from e
 
-    def _calculate_hours(self, entry: time, exit: time) -> float:
+    def _calculate_hours(self, entry: time, exit: time, break_time: Optional[time] = None) -> float:
         try:
             e = datetime.combine(datetime.today(), entry)
             x = datetime.combine(datetime.today(), exit)
-            return round((x - e).total_seconds() / 3600, 2)
+            
+            if x <= e:
+                return 0.0
+                
+            total = (x - e).total_seconds() / 3600
+            
+            if break_time:
+                b = datetime.combine(datetime.today(), break_time)
+                break_minutes = b.hour * 60 + b.minute
+                
+                max_minutes = (x - e).total_seconds() / 60
+                if break_minutes < max_minutes:
+                    total -= break_minutes / 60
+                    
+            return round(max(0, total), 2)
         except Exception as e:
             logger.error(f"Failed to calculate hours: {e}")
             return 0.0

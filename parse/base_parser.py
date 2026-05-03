@@ -50,6 +50,8 @@ class BaseParsingService(ABC):
                         h, m = int(parts[0]), int(parts[1])
 
                         if h < 24 and m < 60:
+                            if h < 6:
+                                h += 12
                             parsed_times.append(time(hour=h, minute=m))
 
                 elif t.isdigit():
@@ -59,6 +61,8 @@ class BaseParsingService(ABC):
                         h, m = val // 100, val % 100
 
                         if h < 24 and m < 60:
+                            if h < 6:
+                                h += 12
                             parsed_times.append(time(hour=h, minute=m))
 
             return parsed_times
