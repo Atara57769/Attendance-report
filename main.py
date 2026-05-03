@@ -1,5 +1,5 @@
 import logging
-from cli import main
+from cli import run_cli
 
 logging.basicConfig(
     level=logging.INFO,
@@ -8,4 +8,4 @@ logging.basicConfig(
 )
 
 if __name__ == '__main__':
-    main()
+    run_cli()

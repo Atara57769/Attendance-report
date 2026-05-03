@@ -2,7 +2,6 @@ import logging
 from collections.abc import Callable
 
 from core.models.attendance_report_models import AttendanceReport
-
 from core.exceptions import (
     OCRProcessingError,
     ParsingError,
@@ -12,22 +11,18 @@ from core.exceptions import (
 )
 from detectors.report_detector import detect_report_type
 from factory.processor_factory import ProcessorFactory
-from services.ocr_service import pdf_to_text
-
 
 logger = logging.getLogger(__name__)
-
 
 class AttendanceReportService:
 
     def __init__(
         self,
-        factory: ProcessorFactory | None = None,
-        ocr_service: Callable[[str], str] | None = None,
-        output_dir: str = ".",
+        factory: ProcessorFactory,
+        ocr_service: Callable[[str], str],
     ) -> None:
-        self._factory = factory or ProcessorFactory(output_dir=output_dir)
-        self._ocr_service = ocr_service or pdf_to_text
+        self._factory = factory
+        self._ocr_service = ocr_service
 
     def process(self, input_pdf_path: str) -> AttendanceReport:
         """Process an attendance report PDF with proper error handling."""
@@ -64,26 +59,20 @@ class AttendanceReportService:
 
         # ---------- VARIATION ----------
         try:
-            print("******************************************************************\n")
-            print(len(model.rows))
             model = processor.apply_variation(model)
         except TransformationError as e:
-            # Validation failed - fall back to original row
             logger.warning(f"Variation validation failed, falling back to original: {e}")
-            # Keep the original model (without variation applied)
         except Exception as e:
             raise TransformationError(f"Failed to apply variation: {e}") from e
 
         # ---------- PDF ----------
         try:
-            print("******************************************************************\n")
-            print(len(model.rows))
             pdf_path = processor.generate_pdf(model)
         except PDFGenerationError:
             raise
         except Exception as e:
             raise PDFGenerationError(f"Failed to generate PDF: {e}") from e
 
-        logger.info(f"Report processed successfully → {pdf_path}")
+        logger.info(f"Report processed successfully -> {pdf_path}")
 
         return model
